@@ -915,6 +915,10 @@ func (q *QMP) ExecuteSCSIDeviceAdd(ctx context.Context, blockdevID, devID, drive
 	return q.executeCommand(ctx, "device_add", args, nil)
 }
 
+func (q *QMP) ExecuteBlockSetIOThrottle(ctx context.Context, args map[string]interface{}) error {
+	return q.executeCommand(ctx, "block_set_io_throttle", args, nil)
+}
+
 // ExecuteBlockdevDel deletes a block device by sending a x-blockdev-del command
 // for qemu versions < 2.9. It sends the updated blockdev-del command for qemu>=2.9.
 // blockdevID is the id of the block device to be deleted.  Typically, this will

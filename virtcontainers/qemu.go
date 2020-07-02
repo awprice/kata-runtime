@@ -1164,11 +1164,37 @@ func (q *qemu) hotplugAddBlockDevice(drive *config.BlockDrive, op operation, dev
 		if err = q.qmpMonitorCh.qmp.ExecuteSCSIDeviceAdd(q.qmpMonitorCh.ctx, drive.ID, devID, driver, bus, romFile, scsiID, lun, true, defaultDisableModern); err != nil {
 			return err
 		}
+
+		throttleSettings, err := loadThrottleSettings()
+		if err != nil {
+			q.Logger().WithError(err).Warn("Unable to load throttle settings")
+			return nil
+		}
+
+		throttleSettings["id"] = devID
+		if err = q.qmpMonitorCh.qmp.ExecuteBlockSetIOThrottle(q.qmpMonitorCh.ctx, throttleSettings); err != nil {
+			q.Logger().WithError(err).Warn("Unable to set the block IO throttle")
+			return nil
+		}
 	default:
 		return fmt.Errorf("Block device %s not recognized", q.config.BlockDeviceDriver)
 	}
 
 	return nil
+}
+
+func loadThrottleSettings() (map[string]interface{}, error) {
+	data, err := ioutil.ReadFile("/etc/kata-containers/throttle.json")
+	if err != nil {
+		return nil, err
+	}
+
+	args := map[string]interface{}{}
+	if err := json.Unmarshal(data, &args); err != nil {
+		return nil, err
+	}
+
+	return args, nil
 }
 
 func (q *qemu) hotplugAddVhostUserBlkDevice(vAttr *config.VhostUserDeviceAttrs, op operation, devID string) (err error) {
